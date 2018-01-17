@@ -71,20 +71,24 @@ class HistoryServer(
     protected override def doGet(req: HttpServletRequest, res: HttpServletResponse): Unit = {
       // Parse the URI created by getAttemptURI(). It contains an app ID and an optional
       // attempt ID (separated by a slash).
-      val parts = Option(req.getPathInfo()).getOrElse("").split("/")
-      if (parts.length < 2) {
-        res.sendError(HttpServletResponse.SC_BAD_REQUEST,
-          s"Unexpected path info in request (URI = ${req.getRequestURI()}")
-        return
+      val pathInfo = Option(req.getPathInfo()).getOrElse("")
+
+      val partsResolver = """^/([a-z0-9_-]*)/?(\d*)?/?(\w+)?/?""".r
+      val (appId, attemptId) = pathInfo match {
+        case partsResolver(id, attempt_id, _) =>
+          if (attempt_id.length > 0) (id, Some(attempt_id))
+          else (id, None)
+
+        case _ =>
+          res.sendError(HttpServletResponse.SC_BAD_REQUEST,
+            s"Unexpected path info in request (URI = ${req.getRequestURI()}")
+          return
       }
 
-      val appId = parts(1)
-      val attemptId = if (parts.length >= 3) Some(parts(2)) else None
-
-      // Since we may have applications with multiple attempts mixed with applications with a
-      // single attempt, we need to try both. Try the single-attempt route first, and if an
-      // error is raised, then try the multiple attempt route.
-      if (!loadAppUi(appId, None) && (!attemptId.isDefined || !loadAppUi(appId, attemptId))) {
+      // If the url is correct, the extracted attemptId will also be correct,
+      // and the result can be obtained directly from the correct appId and attemptId
+      // without unnecessary retries
+      if (!loadAppUi(appId, attemptId)) {
         val msg = <div class="row-fluid">Application {appId} not found.</div>
         res.setStatus(HttpServletResponse.SC_NOT_FOUND)
         UIUtils.basicSparkPage(msg, "Not Found").foreach { n =>

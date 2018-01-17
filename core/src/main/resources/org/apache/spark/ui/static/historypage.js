@@ -127,8 +127,10 @@ $(document).ready(function() {
           attempt["startTime"] = formatTimeMillis(attempt["startTimeEpoch"]);
           attempt["endTime"] = formatTimeMillis(attempt["endTimeEpoch"]);
           attempt["lastUpdated"] = formatTimeMillis(attempt["lastUpdatedEpoch"]);
-          attempt["log"] = uiRoot + "/api/v1/applications/" + id + "/" +
-            (attempt.hasOwnProperty("attemptId") ? attempt["attemptId"] + "/" : "") + "logs";
+          var pathInfo = id + "/" + (attempt.hasOwnProperty("attemptId") ? attempt["attemptId"] + "/" : "")
+                          + "logs";
+          attempt["trackingUrl"] = uiRoot + "/history/" + pathInfo;
+          attempt["log"] = uiRoot + "/api/v1/applications/" + pathInfo;
           attempt["durationMillisec"] = attempt["duration"];
           attempt["duration"] = formatDuration(attempt["duration"]);
           var app_clone = {"id" : id, "name" : name, "num" : num, "attempts" : [attempt]};
